@@ -53,6 +53,10 @@ PLAYER_MIN_Y     equ 24
 PLAYER_MAX_Y     equ 200
 ENEMY_DRAW_LIMIT equ 124
 SCORE_Y          equ 16
+PLAYER_W         equ 8
+PLAYER_H         equ 16
+ENEMY_W          equ 4
+ENEMY_H          equ 8
 
         org $D100
 
@@ -416,18 +420,26 @@ enemy_update_loop:
         jr nc,next_enemy_update
 
         ld a,(py)
-        sub (ix+1)
-        jr nc,enemy_y_abs_ready
-        neg
-enemy_y_abs_ready:
-        cp 8
+        add a,PLAYER_H
+        ld b,a
+        ld a,(ix+1)
+        cp b
+        jr nc,check_enemy_bullet
+        add a,ENEMY_H
+        ld b,a
+        ld a,(py)
+        cp b
         jr nc,check_enemy_bullet
         ld a,(px)
-        sub (ix+0)
-        jr nc,enemy_x_abs_ready
-        neg
-enemy_x_abs_ready:
-        cp 4
+        add a,PLAYER_W
+        ld b,a
+        ld a,(ix+0)
+        cp b
+        jr nc,check_enemy_bullet
+        add a,ENEMY_W
+        ld b,a
+        ld a,(px)
+        cp b
         jr nc,check_enemy_bullet
         call crash_game
         ret
@@ -510,18 +522,26 @@ player_enemy_loop:
         cp ENEMY_DRAW_LIMIT
         jr nc,next_player_enemy
         ld a,(py)
-        sub (ix+1)
-        jr nc,player_y_abs_ready
-        neg
-player_y_abs_ready:
-        cp 8
+        add a,PLAYER_H
+        ld b,a
+        ld a,(ix+1)
+        cp b
+        jr nc,next_player_enemy
+        add a,ENEMY_H
+        ld b,a
+        ld a,(py)
+        cp b
         jr nc,next_player_enemy
         ld a,(px)
-        sub (ix+0)
-        jr nc,player_x_abs_ready
-        neg
-player_x_abs_ready:
-        cp 4
+        add a,PLAYER_W
+        ld b,a
+        ld a,(ix+0)
+        cp b
+        jr nc,next_player_enemy
+        add a,ENEMY_W
+        ld b,a
+        ld a,(px)
+        cp b
         jr nc,next_player_enemy
         call crash_game
         ret
@@ -766,20 +786,31 @@ draw_player:
         ld b,a
         ld a,(px)
         ld c,a
-        ld d,8
-        ld e,4
+        ld d,PLAYER_H
+        ld e,PLAYER_W
         call draw_pattern
         ret
 
 erase_player:
-        ld hl,blank_4x8
         ld a,(py)
+        ld (tmpy),a
+        ld a,PLAYER_H
+        ld (tmpn),a
+erase_player_loop:
+        ld a,(tmpy)
         ld b,a
         ld a,(px)
         ld c,a
-        ld d,8
-        ld e,4
-        call draw_pattern
+        xor a
+        ld e,PLAYER_W
+        call write_run
+        ld a,(tmpy)
+        inc a
+        ld (tmpy),a
+        ld a,(tmpn)
+        dec a
+        ld (tmpn),a
+        jr nz,erase_player_loop
         ret
 
 draw_crash:
@@ -1062,14 +1093,22 @@ reset_vram_high:
         ret
 
 player_pat:
-        db $00,$04,$00,$00
-        db $04,$44,$00,$00
-        db $44,$44,$40,$00
-        db $11,$11,$11,$10
-        db $11,$11,$11,$10
-        db $FF,$FF,$F0,$00
-        db $0F,$FF,$00,$00
-        db $00,$0F,$00,$00
+        db $00,$00,$00,$44,$00,$00,$00,$00
+        db $00,$00,$00,$44,$00,$00,$00,$00
+        db $00,$44,$44,$44,$00,$00,$00,$00
+        db $00,$44,$44,$44,$00,$00,$00,$00
+        db $44,$44,$44,$44,$44,$00,$00,$00
+        db $44,$44,$44,$44,$44,$00,$00,$00
+        db $11,$11,$11,$11,$11,$11,$11,$00
+        db $11,$11,$11,$11,$11,$11,$11,$00
+        db $11,$11,$11,$11,$11,$11,$11,$00
+        db $11,$11,$11,$11,$11,$11,$11,$00
+        db $FF,$FF,$FF,$FF,$FF,$00,$00,$00
+        db $FF,$FF,$FF,$FF,$FF,$00,$00,$00
+        db $00,$FF,$FF,$FF,$00,$00,$00,$00
+        db $00,$FF,$FF,$FF,$00,$00,$00,$00
+        db $00,$00,$00,$FF,$00,$00,$00,$00
+        db $00,$00,$00,$FF,$00,$00,$00,$00
 
 enemy_pat:
         db $00,$00,$60,$00
